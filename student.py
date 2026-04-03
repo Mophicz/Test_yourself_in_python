@@ -75,27 +75,30 @@ class DataScienceStudent(TUDStudent):
         y = f(x)
         
         # 2. Compute mean, variance, and standard deviation
-        mean = integral(f, a, b, 1000) / (b - a)
-        var = integral(lambda x: (f(x) - mean) ** 2, a, b, 1000) / (b - a)
-        sd = np.sqrt(var)
+        # Integrate f(x) over [a, b] using midpoint Riemann sum
+        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=100)
         
-        # 3. Find threshold 70% of y is below
-        y_sorted = np.sort(y)
+        mean = Y_ab / (b - a)
+        variance_temp, _, _, _ = integral(lambda x: (f(x) - mean) ** 2, a, b)
+        variance = variance_temp / (b - a)
+        sd = np.sqrt(variance)
+        
+        # 3. Find the threshold 70% of y is below
+        y_sorted = np.sort(y_ab)
         idx = int(0.7 * len(y_sorted))
         y_m = y_sorted[idx]
         
-        
         print(
             f"Mean: {mean:.6f}, "
-            f"Variance: {var:.6f}, "
+            f"Variance: {variance:.6f}, "
             f"Standard Deviation: {sd:.6f}, "
             f"70th Percentile: {y_m:.6f}"
         )
         
-        
-
+        # Plot function
         fig, ax = plt.subplots(layout="constrained")
         ax.plot(x, y)
+        ax.bar(x_ab, y_ab, width=dx, color="gray", alpha=0.5, ec="gray")
         plt.show()
 
 
@@ -115,7 +118,7 @@ def main():
         favorite_course="Nanorobotik"
     )
     
-    student.solve_integral((0, 12), (4, 7))
+    student.solve_integral((0, 10), (0, 10), lambda x: x)
     
 
 if __name__ == "__main__":
