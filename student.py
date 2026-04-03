@@ -54,12 +54,7 @@ class TUDStudent:
         
                 
 class DataScienceStudent(TUDStudent):
-    def solve_integral(
-        self,  
-        x_limits, 
-        x_stats,
-        f=lambda x: np.exp(-x) * np.cos(x),
-    ):
+    def solve_integral(self, x_limits, x_stats, f):
         try:
             x_start, x_end = x_limits
         except (TypeError, ValueError): 
@@ -76,7 +71,7 @@ class DataScienceStudent(TUDStudent):
         
         # 2. Compute mean, variance, and standard deviation
         # Integrate f(x) over [a, b] using midpoint Riemann sum
-        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=100)
+        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=10)
         
         mean = Y_ab / (b - a)
         variance_temp, _, _, _ = integral(lambda x: (f(x) - mean) ** 2, a, b)
@@ -88,17 +83,39 @@ class DataScienceStudent(TUDStudent):
         idx = int(0.7 * len(y_sorted))
         y_m = y_sorted[idx]
         
+        # 4. Console output
         print(
             f"Mean: {mean:.6f}, "
             f"Variance: {variance:.6f}, "
             f"Standard Deviation: {sd:.6f}, "
-            f"70th Percentile: {y_m:.6f}"
+            f"70% threshold: {y_m:.6f}"
         )
         
-        # Plot function
+        return {
+            "mean": mean,
+            "variance": variance,
+            "standard_deviation": sd,
+            "threshold_70_percent": y_m,
+            "x": x,
+            "y": y,
+            "x_interval": x_ab,
+            "y_interval": y_ab,
+            "dx": dx
+        }
+        
+    def plot_integral(self, x, x_stats, f=lambda x: np.exp(-x) * np.cos(x)):
+        results = self.solve_integral(x, x_stats, f)
+        
         fig, ax = plt.subplots(layout="constrained")
-        ax.plot(x, y)
-        ax.bar(x_ab, y_ab, width=dx, color="gray", alpha=0.5, ec="gray")
+        ax.plot(results["x"], results["y"])
+        ax.bar(
+            results["x_interval"], 
+            results["y_interval"], 
+            width=results["dx"], 
+            color="gray", 
+            alpha=0.5, 
+            ec="gray"
+        )
         plt.show()
 
 
@@ -118,7 +135,7 @@ def main():
         favorite_course="Nanorobotik"
     )
     
-    student.solve_integral((0, 10), (0, 10), lambda x: x)
+    student.plot_integral((0, 10), (4, 7), lambda x: x)
     
 
 if __name__ == "__main__":
