@@ -9,6 +9,15 @@ def integral(f, a, b, n=2000):
     return np.sum(y*dx), y, x, dx
 
 
+def derivative(delta_x, y):
+        ones = np.ones(len(y) - 1)
+        M1 = np.diag(ones, k=1)
+        M2 = np.diag(-ones, k=-1)
+        M = M1 + M2
+        dydx = M @ y / (2 * delta_x)
+        return dydx[1:-1]
+    
+
 def main():
     f = lambda x: x ** 2
     Y, y, _, _ = integral(f, 0, 1)

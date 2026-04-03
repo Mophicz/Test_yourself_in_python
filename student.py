@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import integral
+from utils import integral, derivative
 
 
 class TUDStudent:
@@ -66,12 +66,12 @@ class DataScienceStudent(TUDStudent):
             raise TypeError("x_stats must be a Sequence of two numbers.")    
         
         # 1. Compute y and plot the function
-        x = np.linspace(x_start, x_end)
+        x = np.linspace(x_start, x_end, int(np.ceil(1000*(x_end - x_start))))
         y = f(x)
         
         # 2. Compute mean, variance, and standard deviation
         # Integrate f(x) over [a, b] using midpoint Riemann sum
-        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=10)
+        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=int(np.ceil(10*(b - a))))
         
         mean = Y_ab / (b - a)
         variance_temp, _, _, _ = integral(lambda x: (f(x) - mean) ** 2, a, b)
@@ -80,42 +80,77 @@ class DataScienceStudent(TUDStudent):
         
         # 3. Find the threshold 70% of y is below
         y_sorted = np.sort(y_ab)
-        idx = int(0.7 * len(y_sorted))
-        y_m = y_sorted[idx]
+        thresh_idx = int(0.7 * len(y_sorted))
+        y_m = y_sorted[thresh_idx]
         
-        # 4. Console output
+        # 4. Compute derivative
+        delta_x = x[1] - x[0]
+        dydx = derivative(delta_x, y)
+        
+        # 5. Find extrema
+        # Extremum are identified by an exact zero crossing or a sign change
+        # between two consecutive points in the derivative
+        extrema_idx = []
+        for i in range(1, len(dydx) - 1):
+            if dydx[i] == 0 or dydx[i-1] * dydx[i] < 0:
+                extrema_idx.append(i + 1)
+                
+        extrema_x = x[extrema_idx]
+        extrema_y = y[extrema_idx]
+        
+        # 6. Console output
         print(
-            f"Mean: {mean:.6f}, "
-            f"Variance: {variance:.6f}, "
-            f"Standard Deviation: {sd:.6f}, "
-            f"70% threshold: {y_m:.6f}"
+            f"Mean                  = {mean:.4g} \n"
+            f"Variance              = {variance:.4g} \n"
+            f"Standard Deviation    = {sd:.4g} \n"
+            f"70% threshold         = {y_m:.4g} \n"
+            "\n"
+            f"Extrema at: \n" 
+            + "\n".join(f"x_{i} = {x:.4g}, " for i, x in enumerate(extrema_x))
         )
         
         return {
-            "mean": mean,
-            "variance": variance,
-            "standard_deviation": sd,
-            "threshold_70_percent": y_m,
             "x": x,
             "y": y,
             "x_interval": x_ab,
             "y_interval": y_ab,
-            "dx": dx
+            "mean": mean,
+            "variance": variance,
+            "standard_deviation": sd,
+            "threshold_70_percent": y_m,
+            "dx": dx,
+            "dydx": dydx,
+            "extrema_index": extrema_idx
         }
         
-    def plot_integral(self, x, x_stats, f=lambda x: np.exp(-x) * np.cos(x)):
-        results = self.solve_integral(x, x_stats, f)
-        
+    def plot_integral(
+        self, x_limits, 
+        x_stats, 
+        f=lambda x: np.exp(-x) * np.cos(x), 
+        derivative=True
+    ):
+        results = self.solve_integral(x_limits, x_stats, f)
+    
         fig, ax = plt.subplots(layout="constrained")
-        ax.plot(results["x"], results["y"])
+        ax.plot(results["x"], results["y"], label="f(x)")
         ax.bar(
             results["x_interval"], 
             results["y_interval"], 
             width=results["dx"], 
             color="gray", 
             alpha=0.5, 
-            ec="gray"
+            ec="gray",
+            label=f"Area under f(x) on [{x_stats[0]}, {x_stats[1]}]"
         )
+        if derivative:
+            plt.plot(results["x"][1:-1], results["dydx"], label="f'(x)")
+            plt.scatter(
+                results["x"][results["extrema_index"]], 
+                results["y"][results["extrema_index"]], 
+                color="red",
+                label="Extrema"
+            )
+        plt.legend()
         plt.show()
 
 
@@ -135,8 +170,8 @@ def main():
         favorite_course="Nanorobotik"
     )
     
-    student.plot_integral((0, 10), (4, 7), lambda x: x)
-    
+    student.plot_integral((-1.5, 12), (0, 1.2), lambda x: np.exp(-x) * np.cos(x))
+
 
 if __name__ == "__main__":
     main()
