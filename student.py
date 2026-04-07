@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import integral, derivative
+from utils import is_number, integral, derivative
 
 
 class TUDStudent:
+    """Represents a student at the Technical University of Darmstadt."""
     def __init__ (self, name, age, date_of_registration, registration_number, 
                   finished_courses, favorite_course):
         self._name = name
@@ -54,14 +55,22 @@ class TUDStudent:
         
                 
 class DataScienceStudent(TUDStudent):
-    def solve_integral(self, x_limits, x_stats, f):
+    """
+    Represents a data science student at the Technical University of Darmstadt.
+    Inherits from TUDStudent and adds methods for solving math problems.
+    """
+    def solve_integral(self, x_limits, x_stats, f=lambda x: np.exp(-x) * np.cos(x)):
         try:
             x_start, x_end = x_limits
+            if not (is_number(x_start) and is_number(x_end)):
+                raise TypeError 
         except (TypeError, ValueError): 
             raise TypeError("x_limits must be a Sequence of two numbers.")
         
         try:
             a, b = x_stats
+            if not (is_number(a) and is_number(b)):
+                raise TypeError
         except (TypeError, ValueError): 
             raise TypeError("x_stats must be a Sequence of two numbers.")    
         
@@ -151,7 +160,7 @@ class DataScienceStudent(TUDStudent):
                 label="Extrema"
             )
         plt.legend()
-        plt.show()
+        plt.show()   
 
 
 def main():

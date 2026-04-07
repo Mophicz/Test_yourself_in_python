@@ -1,4 +1,10 @@
+import numbers
+
 import numpy as np
+
+
+def is_number(value):
+    return isinstance(value, numbers.Number)
 
 
 def integral(f, a, b, n=2000):
@@ -10,12 +16,13 @@ def integral(f, a, b, n=2000):
 
 
 def derivative(delta_x, y):
-        ones = np.ones(len(y) - 1)
-        M1 = np.diag(ones, k=1)
-        M2 = np.diag(-ones, k=-1)
-        M = M1 + M2
-        dydx = M @ y / (2 * delta_x)
-        return dydx[1:-1]
+    """Calculates numerical derivative of y using central difference."""
+    ones = np.ones(len(y) - 1)
+    M1 = np.diag(ones, k=1)
+    M2 = np.diag(-ones, k=-1)
+    M = M1 + M2
+    dydx = M @ y / (2 * delta_x)
+    return dydx[1:-1]
     
 
 def main():
