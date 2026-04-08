@@ -1,5 +1,5 @@
 import pytest
-from student import TUDStudent, DataScienceStudent
+from src.student import TUDStudent, DataScienceStudent
 
 
 @pytest.fixture

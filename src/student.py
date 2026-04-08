@@ -1,7 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import is_number, integral, derivative
+from src.utils import (
+    is_number, 
+    is_singular, 
+    integral, 
+    derivative, 
+    lu_decomposition,
+)
 
 
 class TUDStudent:
@@ -66,7 +72,6 @@ class DataScienceStudent(TUDStudent):
                 raise TypeError 
         except (TypeError, ValueError): 
             raise TypeError("x_limits must be a Sequence of two numbers.")
-        
         try:
             a, b = x_stats
             if not (is_number(a) and is_number(b)):
@@ -80,7 +85,7 @@ class DataScienceStudent(TUDStudent):
         
         # 2. Compute mean, variance, and standard deviation
         # Integrate f(x) over [a, b] using midpoint Riemann sum
-        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=int(np.ceil(10*(b - a))))
+        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=int(np.ceil(1000*(b - a))))
         
         mean = Y_ab / (b - a)
         variance_temp, _, _, _ = integral(lambda x: (f(x) - mean) ** 2, a, b)
@@ -129,7 +134,8 @@ class DataScienceStudent(TUDStudent):
             "threshold_70_percent": y_m,
             "dx": dx,
             "dydx": dydx,
-            "extrema_index": extrema_idx
+            "extrema_index": extrema_idx,
+            "extrema_x": extrema_x
         }
         
     def plot_integral(
@@ -138,10 +144,14 @@ class DataScienceStudent(TUDStudent):
         f=lambda x: np.exp(-x) * np.cos(x), 
         derivative=True
     ):
+        """
+        Helper method to plot the data from solve_integral. This allows 
+        solve_integral to return the results without plotting.
+        """
         results = self.solve_integral(x_limits, x_stats, f)
-    
+
         fig, ax = plt.subplots(layout="constrained")
-        ax.plot(results["x"], results["y"], label="f(x)")
+        ax.plot(results["x"], results["y"], label=r"$y = f(x)$")
         ax.bar(
             results["x_interval"], 
             results["y_interval"], 
@@ -149,19 +159,58 @@ class DataScienceStudent(TUDStudent):
             color="gray", 
             alpha=0.5, 
             ec="gray",
-            label=f"Area under f(x) on [{x_stats[0]}, {x_stats[1]}]"
+            label=f"Area under y on [{x_stats[0]}, {x_stats[1]}]"
         )
         if derivative:
-            plt.plot(results["x"][1:-1], results["dydx"], label="f'(x)")
+            plt.plot(results["x"][1:-1], results["dydx"], label=r"$\frac{dy}{dx}$")
             plt.scatter(
                 results["x"][results["extrema_index"]], 
                 results["y"][results["extrema_index"]], 
                 color="red",
-                label="Extrema"
+                label=r"$\frac{dy}{dx} = 0$"
             )
         plt.legend()
         plt.show()   
 
+    def solve_SLE(self, A, b):
+        # Check input type by converting to numpy array
+        try:
+            A = np.array(A, dtype=float)
+            b = np.array(b, dtype=float)
+        except Exception:
+            raise TypeError(
+                "Input must be convertible to a numpy array of numbers."
+            )
+        
+        if is_singular(A):
+            raise ValueError("Coefficient matrix A is singular.")
+        
+        L, U = lu_decomposition(A)
+        
+        # Forward substitution to solve Ly = b
+        y = np.zeros_like(b, dtype=float)
+        
+        for i in np.arange(L.shape[0]):
+            sum = 0
+            for j in np.arange(i):
+                sum += y[j] * L[i, j]
+                
+            y[i] = (b[i] - sum) / L[i, i]
+        
+        # Backward substitution to solve Ux = y
+        x = np.zeros_like(y, dtype=float)
+        
+        for i in np.arange(U.shape[0] - 1, -1, -1):
+            sum = 0
+            for j in np.arange(i + 1, U.shape[0]):
+                sum += x[j] * U[i, j]
+                
+            x[i] = (y[i] - sum) / U[i, i]
+        
+        print(f"Solution to SLE: {x}")
+        
+        return x
+    
 
 def main():
     student = DataScienceStudent(
@@ -179,8 +228,14 @@ def main():
         favorite_course="Nanorobotik"
     )
     
-    student.plot_integral((-1.5, 12), (0, 1.2), lambda x: np.exp(-x) * np.cos(x))
-
+    #student.plot_integral((-1.5, 12), (-0.78, 1.75), lambda x: np.exp(-x) * np.cos(x))
+    #student.plot_integral((-5, 5), (0, 5), lambda x: x ** 2)
+    #student.solve_SLE([[1, 2], [3, 4]], [5, 6])
+    student.solve_SLE(
+        [[3, 2, 3, 10], [2, -2, 5, 8], [3, 3, 4, 9], [3, 4, -3, -7]], 
+        [4, 1, 3, 2]
+    )
+    
 
 if __name__ == "__main__":
     main()
