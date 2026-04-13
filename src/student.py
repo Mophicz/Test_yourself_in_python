@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+rng = np.random.default_rng()
 
 from src.utils import (
     is_number, 
@@ -211,7 +212,51 @@ class DataScienceStudent(TUDStudent):
         
         return x
     
-
+    def invert_matrix(self, A):
+        if A.size == 1:
+            if A == 0:
+                raise ValueError("Cannot invert a zero scalar.")
+            return 1.0 / A
+    
+        # Column-wise inversion by solving SLE for each column
+        inv_A = np.zeros(A.shape)
+        e = np.eye(len(A))
+        
+        for i in np.arange(len(A)):
+            inv_A[:, i] = self.solve_SLE(A, e[:, i])
+        
+        return inv_A
+        
+    def solve_OLS(self, y, X, output=True):
+        # Check input type by converting to numpy array
+        try:
+            y = np.array(y, dtype=float)
+            X = np.array(X, dtype=float)
+        except Exception:
+            raise TypeError(
+                "Input must be convertible to a numpy array of numbers."
+            )
+        
+        # Handle 1d input
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
+        
+        # Check restriction observations > variables
+        n, l = X.shape
+        if n < l:
+            raise ValueError("Number of observations must exceed number of variables.")
+        
+        beta = self.invert_matrix(X.T @ X) @ X.T @ y
+        
+        # TODO: t-statistics and p-values
+        
+        # Optional console output
+        if output:
+            print(f"parameter vector beta: {beta}")
+            
+        return beta
+        
+    
 def main():
     student = DataScienceStudent(
         name="Michael Frasunkiewicz", 
@@ -231,11 +276,23 @@ def main():
     #student.plot_integral((-1.5, 12), (-0.78, 1.75), lambda x: np.exp(-x) * np.cos(x))
     #student.plot_integral((-5, 5), (0, 5), lambda x: x ** 2)
     #student.solve_SLE([[1, 2], [3, 4]], [5, 6])
-    student.solve_SLE(
-        [[3, 2, 3, 10], [2, -2, 5, 8], [3, 3, 4, 9], [3, 4, -3, -7]], 
-        [4, 1, 3, 2]
-    )
+    #student.solve_SLE(
+    #    [[3, 2, 3, 10], [2, -2, 5, 8], [3, 3, 4, 9], [3, 4, -3, -7]], 
+    #    [4, 1, 3, 2]
+    #)
     
+    x = np.linspace(0, 10)
+    y = x ** 2 
+    z = y + 0.1 * np.max(y) * rng.standard_normal(len(y))
+    
+    X = np.column_stack([np.ones_like(x), x, x ** 2])
+
+    beta = student.solve_OLS(y, X)
+    
+    plt.scatter(x, z)
+    plt.plot(x, X @ beta, c="orange")
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
