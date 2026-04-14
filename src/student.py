@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 rng = np.random.default_rng()
 
 from src.utils import (
@@ -242,19 +243,34 @@ class DataScienceStudent(TUDStudent):
             X = X.reshape(-1, 1)
         
         # Check restriction observations > variables
-        n, l = X.shape
-        if n < l:
+        n, k = X.shape
+        if n < k:
             raise ValueError("Number of observations must exceed number of variables.")
         
-        beta = self.invert_matrix(X.T @ X) @ X.T @ y
+        # (X.T @ X)^-1 is used twice: calculating parameters beta and 
+        # the covariance matrix C
+        xtx_inv = self.invert_matrix(X.T @ X)
         
-        # TODO: t-statistics and p-values
+        # Solve for model parameter vector beta
+        beta = xtx_inv @ X.T @ y
+
+        # Calculating standard errors for t-statistics
+        residuals = y - X @ beta
+        sigma_squared = sum(residuals ** 2) / (n - k)
+        cov_matrix = sigma_squared * xtx_inv
+        standard_errors = np.sqrt(np.diag(cov_matrix))
+        
+        # Calculate t-statistics and p-values
+        t_stats = beta / standard_errors
+        p_values = 2 * stats.t.sf(np.abs(t_stats), n - k)
         
         # Optional console output
         if output:
-            print(f"parameter vector beta: {beta}")
+            print(f"Parameter vector beta:  {beta} \n")
+            print(f"t-statistics:           {t_stats} \n")
+            print(f"p-values:               {p_values}")
             
-        return beta
+        return beta, t_stats, p_values
         
     
 def main():
@@ -282,12 +298,12 @@ def main():
     #)
     
     x = np.linspace(0, 10)
-    y = x ** 2 
+    y = x ** 2 + 5
     z = y + 0.1 * np.max(y) * rng.standard_normal(len(y))
     
     X = np.column_stack([np.ones_like(x), x, x ** 2])
 
-    beta = student.solve_OLS(y, X)
+    beta, _, _ = student.solve_OLS(z, X)
     
     plt.scatter(x, z)
     plt.plot(x, X @ beta, c="orange")
