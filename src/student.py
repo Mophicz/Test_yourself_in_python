@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-rng = np.random.default_rng()
+
 
 from src.utils import (
     is_number, 
@@ -13,7 +13,20 @@ from src.utils import (
 
 
 class TUDStudent:
-    """Represents a student at the Technical University of Darmstadt."""
+    """Create a student at the Technical University of Darmstadt.
+    
+    Attributes:
+        name (str): The student's name.
+        age (int): The student's age.
+        date_of_registration (str): The date the student registered at the 
+            university.
+        registration_number (str): The student's registration number.
+        finished_courses (list): List of courses the student has completed.
+        favorite_course (str): The student's favorite course.
+
+    Subclasses:
+        DataScienceStudent: A student specializing in data science.
+    """
     def __init__ (self, name, age, date_of_registration, registration_number, 
                   finished_courses, favorite_course):
         self._name = name
@@ -63,11 +76,61 @@ class TUDStudent:
         
                 
 class DataScienceStudent(TUDStudent):
+    """Create a data science student at the Technical University of Darmstadt.
+
+    Inherets from TUDStudent and adds methods for solving math problems.
+
+    Methods:
+        solve_integral: Solves an integral and computes statistics.
+        plot_integral: Helper method to plot the data from solve_integral.
+        solve_SLE: Solves a system of linear equations.
+        invert_matrix: Helper method to invert a matrix using solve_SLE.
+        solve_MLS: Solves a multivariate least-squares regression problem.
     """
-    Represents a data science student at the Technical University of Darmstadt.
-    Inherits from TUDStudent and adds methods for solving math problems.
-    """
-    def solve_integral(self, x_limits, x_stats, f=lambda x: np.exp(-x) * np.cos(x)):
+    def solve_integral(
+        self, 
+        x_limits, 
+        x_stats, 
+        f=lambda x: np.exp(-x) * np.cos(x),
+        n=1000
+    ):
+        """Solves an integral and calculates statistics.
+
+        Args:
+            x_limits (list): Start and end value for domain of f(x).
+            x_stats (list): Start and end value for statistics calculation.
+            f (Callable, optional): Function f(x) of which statistics are 
+                calculated. Defaults to lambda x: np.exp(-x)*np.cos(x).
+            n (int, optional): Number of points for numerical integration. 
+                Defaults to 1000.
+
+        Raises:
+            TypeError: If x_start or x_end are not Sequences (list, tuple) 
+            of two numbers.
+
+        Returns:
+            dict[str, stats]: A dictionary containing the following keys
+                and values:
+                - "x": The x values as an array.
+                - "y": The corresponding y values of f(x) as an array.
+                - "x_interval": The x values shifted by dx/2 for plotting the
+                    area under the curve using bars.
+                - "y_interval": The corresponding shifted y values.
+                - "mean": The mean of f(x) over the interval given in x_stats.
+                - "variance": The variance of f(x) over the interval given in
+                    x_stats.
+                - "standard_deviation": The standard deviation of f(x) over the
+                    interval given in x_stats.
+                - "threshold_70_percent": The value y_m such that 70% of the
+                    y values of f(x) over the interval given in x_stats are 
+                    below y_m.
+                - "dx": The step size used for numerical integration.
+                - "dydx": The numerical derivative of f(x) as an array.
+                - "extrema_index": The indices of the extrema of f(x) as an 
+                    array.
+                - "extrema_x": The x values of the extrema of f(x) as an array.
+        """
+        # Check input types
         try:
             x_start, x_end = x_limits
             if not (is_number(x_start) and is_number(x_end)):
@@ -81,20 +144,20 @@ class DataScienceStudent(TUDStudent):
         except (TypeError, ValueError): 
             raise TypeError("x_stats must be a Sequence of two numbers.")    
         
-        # 1. Compute y and plot the function
-        x = np.linspace(x_start, x_end, int(np.ceil(1000*(x_end - x_start))))
+        # 1. Generate x on interval given in x_limits and compute y = f(x)
+        x = np.linspace(x_start, x_end, 1000)
         y = f(x)
         
         # 2. Compute mean, variance, and standard deviation
         # Integrate f(x) over [a, b] using midpoint Riemann sum
-        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n=int(np.ceil(1000*(b - a))))
+        Y_ab, y_ab, x_ab, dx = integral(f, a, b, n)
         
         mean = Y_ab / (b - a)
         variance_temp, _, _, _ = integral(lambda x: (f(x) - mean) ** 2, a, b)
         variance = variance_temp / (b - a)
         sd = np.sqrt(variance)
         
-        # 3. Find the threshold 70% of y is below
+        # 3. Find the threshold y_m such that 70% of y is below it
         y_sorted = np.sort(y_ab)
         thresh_idx = int(0.7 * len(y_sorted))
         y_m = y_sorted[thresh_idx]
@@ -140,18 +203,11 @@ class DataScienceStudent(TUDStudent):
             "extrema_x": extrema_x
         }
         
-    def plot_integral(
-        self, x_limits, 
-        x_stats, 
-        f=lambda x: np.exp(-x) * np.cos(x), 
-        derivative=True
-    ):
+    def plot_integral(self, results):
+        """Helper method to plot the data from solve_integral. 
+        
+        This allows solve_integral to return the results for testing.
         """
-        Helper method to plot the data from solve_integral. This allows 
-        solve_integral to return the results without plotting.
-        """
-        results = self.solve_integral(x_limits, x_stats, f)
-
         fig, ax = plt.subplots(layout="constrained")
         ax.plot(results["x"], results["y"], label=r"$y = f(x)$")
         ax.bar(
@@ -161,7 +217,10 @@ class DataScienceStudent(TUDStudent):
             color="gray", 
             alpha=0.5, 
             ec="gray",
-            label=f"Area under y on [{x_stats[0]}, {x_stats[1]}]"
+            label= (
+                f"Area under y on [{results["x_interval"][0]:.2g}, "
+                f"{results["x_interval"][-1]:.2g}]"
+            )
         )
         if derivative:
             plt.plot(results["x"][1:-1], results["dydx"], label=r"$\frac{dy}{dx}$")
@@ -175,7 +234,20 @@ class DataScienceStudent(TUDStudent):
         plt.show()   
 
     def solve_SLE(self, A, b):
-        # Check input type by converting to numpy array
+        """Solves a system of linear equations Ax = b.
+
+        Args:
+            A (array): System matrix A.
+            b (array): Solution vector b.
+
+        Raises:
+            TypeError: A and b must be convertable to a numpy array of numbers.
+            ValueError: If A is singular (since there is no unique solution).
+
+        Returns:
+            np.ndarray: Solution vector x.
+        """
+        # Check input types
         try:
             A = np.array(A, dtype=float)
             b = np.array(b, dtype=float)
@@ -184,12 +256,14 @@ class DataScienceStudent(TUDStudent):
                 "Input must be convertible to a numpy array of numbers."
             )
         
+        # Check if there is no unique solution.
         if is_singular(A):
             raise ValueError("Coefficient matrix A is singular.")
         
+        # 1. Perform LU decomposition of A
         L, U = lu_decomposition(A)
         
-        # Forward substitution to solve Ly = b
+        # 2. Forward substitution to solve Ly = b
         y = np.zeros_like(b, dtype=float)
         
         for i in np.arange(L.shape[0]):
@@ -199,7 +273,7 @@ class DataScienceStudent(TUDStudent):
                 
             y[i] = (b[i] - sum) / L[i, i]
         
-        # Backward substitution to solve Ux = y
+        # 3. Backward substitution to solve Ux = y
         x = np.zeros_like(y, dtype=float)
         
         for i in np.arange(U.shape[0] - 1, -1, -1):
@@ -209,26 +283,52 @@ class DataScienceStudent(TUDStudent):
                 
             x[i] = (y[i] - sum) / U[i, i]
         
+        # 4. Console output
         print(f"Solution to SLE: {x}")
         
         return x
     
     def invert_matrix(self, A):
+        """Inverts a matrix by solving SLE column-wise."""
+        # Check matrix size, if 1x1 inversion is just 1/A
         if A.size == 1:
+            # If A is zero inversion is not possible
             if A == 0:
                 raise ValueError("Cannot invert a zero scalar.")
             return 1.0 / A
     
-        # Column-wise inversion by solving SLE for each column
+        # Create empty matrix of same dimensio of A
         inv_A = np.zeros(A.shape)
+
+        # Create identity matrix of same size as A
         e = np.eye(len(A))
         
+        # Solve column-wise SLE to get the inverse
         for i in np.arange(len(A)):
             inv_A[:, i] = self.solve_SLE(A, e[:, i])
         
         return inv_A
         
-    def solve_OLS(self, y, X, output=True):
+    def solve_MLS(self, y, X, output=True):
+        """Solves a multivariate least-squares regression problem.
+
+        Args:
+            y (array): Response variable.
+            X (array): Regressor matrix.
+            output (bool, optional): Enables console output of the solution. 
+                Defaults to True.
+
+        Raises:
+            TypeError: If input is not array_like or does not contain numbers.
+            ValueError: If the number of observations is less than the number 
+                of variables.
+
+        Returns:
+            beta (np.ndarray): The parameter vector beta of the regression 
+                model.
+            t_stats (np.ndarray): The t-statistics for the parameters.
+            p_values (np.ndarray): The p-values for the parameters.
+        """
         # Check input type by converting to numpy array
         try:
             y = np.array(y, dtype=float)
@@ -245,7 +345,9 @@ class DataScienceStudent(TUDStudent):
         # Check restriction observations > variables
         n, k = X.shape
         if n < k:
-            raise ValueError("Number of observations must exceed number of variables.")
+            raise ValueError(
+                "Number of observations must exceed number of variables."
+            )
         
         # (X.T @ X)^-1 is used twice: calculating parameters beta and 
         # the covariance matrix C
@@ -271,45 +373,4 @@ class DataScienceStudent(TUDStudent):
             print(f"p-values:               {p_values}")
             
         return beta, t_stats, p_values
-        
-    
-def main():
-    student = DataScienceStudent(
-        name="Michael Frasunkiewicz", 
-        age=25, 
-        date_of_registration="01.10.2024", 
-        registration_number=2559355,
-        finished_courses=[
-            "Sensortechnik",
-            "Signalverarbeitung",
-            "Medical Data Science", 
-            "Machine Learning",
-            "Nanorobotik"
-        ],
-        favorite_course="Nanorobotik"
-    )
-    
-    #student.plot_integral((-1.5, 12), (-0.78, 1.75), lambda x: np.exp(-x) * np.cos(x))
-    #student.plot_integral((-5, 5), (0, 5), lambda x: x ** 2)
-    #student.solve_SLE([[1, 2], [3, 4]], [5, 6])
-    #student.solve_SLE(
-    #    [[3, 2, 3, 10], [2, -2, 5, 8], [3, 3, 4, 9], [3, 4, -3, -7]], 
-    #    [4, 1, 3, 2]
-    #)
-    
-    x = np.linspace(0, 10)
-    y = x ** 2 + 5
-    z = y + 0.1 * np.max(y) * rng.standard_normal(len(y))
-    
-    X = np.column_stack([np.ones_like(x), x, x ** 2])
-
-    beta, _, _ = student.solve_OLS(z, X)
-    
-    plt.scatter(x, z)
-    plt.plot(x, X @ beta, c="orange")
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()
-        
+          

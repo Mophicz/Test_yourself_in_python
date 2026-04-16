@@ -33,7 +33,8 @@ def test_solve_integral(data_science_student, x_limits, x_stats, exception):
         results = data_science_student.solve_integral(
             x_limits, 
             x_stats, 
-            f=lambda x: x ** 2
+            f=lambda x: x ** 2,
+            n=10000
         )
         assert isinstance(results, dict)
         assert results["mean"] == pytest.approx(25 / 3, abs=1e-2)

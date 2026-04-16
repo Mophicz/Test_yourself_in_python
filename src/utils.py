@@ -4,6 +4,7 @@ import numpy as np
 
 
 def is_number(value):
+    """Checks if the value is a number."""
     return isinstance(value, numbers.Number)
 
 
