@@ -40,11 +40,9 @@ def call_solve_SLE():
     
 
 def call_solve_MLS():
-    rng = np.random.default_rng()
-
     x = np.linspace(-10, 10)
     y = x ** 3
-    z = y + 0.1 * np.max(y) * rng.standard_normal(len(y)) + 50
+    z = y + 0.1 * np.max(y) * np.random.randn(len(y)) + 50
     
     X = np.column_stack([np.ones_like(x), x, x **2, x ** 3])
 
